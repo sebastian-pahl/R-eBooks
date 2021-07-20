@@ -44,7 +44,6 @@ library("ggplot2")
 library("rJava")
 library("ggmap")
 library("getmap")
-register_google(key = "AIzaSyBwhjaTNaRtM4W4HM_9ALaX_5DjcAEz4Dk")
 #c(56, 5), c(45, 15)
 
 ?get_googlemap

@@ -1,4 +1,6 @@
-#setwd("~/r_directory")
+getwd()
+setwd("/Users/sebastianpahl/Git/Strava-project")
+
 #library("plot3D")
 #library("plot3Drgl")
 
@@ -9,7 +11,7 @@
 
 #TO DO LIST: 
 #plot vs meters OR time
-#fix power    
+#interpolate missing power numbers   
 #first check if power, hr and cadence data is available
 #also plot vs distance covered
 #download from either original data or gpx
@@ -19,8 +21,6 @@ par(mar=c(5,4,4,4))
 strava_plot("Morning_Ride_Kandel.gpx")
 
 strava_table_creator <- function(data.gpx) {
-
-
 
         data_table <- read.csv(data.gpx, strip.white = TRUE, skip=1,col.names = c("column1"))
         data_character <- as.character(data_table[,1])
@@ -36,32 +36,56 @@ strava_table_creator <- function(data.gpx) {
         latitude <- as.numeric(substr(find_coordinates,12,21))
         longitude <- as.numeric(substr(find_coordinates,27,35))
         
-        find_power <- grep("<power>", data_character, value=TRUE)
-        power <- as.numeric(gsub("</?power>","",find_power))
+        #extensions
+        data_string <- toString(data_table)
+        extensions <- c(str_split(data_string, "/extensions", simplify=TRUE))
         
-        find_pulse <- grep("<gpxtpx:hr>", data_character, value=TRUE)
-        pulse <- as.numeric(gsub("</?gpxtpx:hr>","",find_pulse))
+        power_function <- function(x) {
+            extract_power <- str_extract(x, "<power>.*</power>")
+            power <- str_extract(extract_power, "\\d+")
+            power
+        }
+        power <- head(na.locf(as.numeric(lapply(extensions, power_function))),-1)
         
-        #cadence
+        pulse_function <- function(x) {
+            extract_pulse <- str_extract(x, "<gpxtpx:hr>.*</gpxtpx:hr>")
+            pulse <- str_extract(extract_pulse, "\\d+")
+            pulse
+        }
+        pulse <- head(na.locf(as.numeric(lapply(extensions, pulse_function))),-1)
         
-        data.frame(hours, elevation, longitude, latitude, pulse)
+        cadence_function <- function(x) {
+            extract_cadence <- str_extract(x, "<gpxtpx:cad>.*</gpxtpx:cad>")
+            cadence <- str_extract(extract_cadence, "\\d+")
+            cadence
+        }
+        cadence <- head(na.locf(as.numeric(lapply(extensions, cadence_function))),-1)
+        
+        temperature_function <- function(x) {
+            extract_temperature <- str_extract(x, "<gpxtpx:atemp>.*</gpxtpx:atemp>")
+            temperature <- str_extract(extract_temperature, "\\d+")
+            temperature
+        }
+        temperature <- head(na.locf(as.numeric(lapply(extensions, temperature_function))),-1)
+        
+        data.frame(hours, elevation, longitude, latitude, power, pulse, cadence, temperature)
 }
 
 strava_output <- function(data.gpx) {
     
         strava_data <- strava_table_creator(data.gpx)
         
-        plot(strava_data$hours, strava_data$elevation, type="l", lwd=3, 
-                main= "Elevation vs Time", xlab = "Time in hours", ylab="Elevation")
-        
-        coordinates <- data.frame(strava_data$longitude, strava_data$latitude)
-        plot(coordinates, type="l", lwd=3, 
-                main = "Coordinates", xlab = "Longitude", ylab = "Latitude")
-        
-        scatter3D(strava_data$longitude, strava_data$latitude, strava_data$elevation, 
-                  theta=15, phi=0, bty="g", type="h")
-        plotrgl()
-    
+        #plot(strava_data$hours, strava_data$elevation, type="l", lwd=3, 
+        #        main= "Elevation vs Time", xlab = "Time in hours", ylab="Elevation")
+        #
+        #coordinates <- data.frame(strava_data$longitude, strava_data$latitude)
+        #plot(coordinates, type="l", lwd=3, 
+        #        main = "Coordinates", xlab = "Longitude", ylab = "Latitude")
+        #
+        #scatter3D(strava_data$longitude, strava_data$latitude, strava_data$elevation, 
+        #          theta=15, phi=0, bty="g", type="h")
+        #plotrgl()
+
 }
 
 strava_output("Morning_Ride_Kandel.gpx")

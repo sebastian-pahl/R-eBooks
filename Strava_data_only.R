@@ -13,10 +13,40 @@ find_coordinates <- grep("<trkpt lat", data_character, value=TRUE)
 latitude <- as.numeric(substr(find_coordinates,12,21))
 longitude <- as.numeric(substr(find_coordinates,27,35))
 
-find_power <- grep("<power>", data_character, value=TRUE)
-power <- as.numeric(gsub("</?power>","",find_power))
+#extensions
+data_string <- toString(data_table)
+extensions <- c(str_split(data_string, "/extensions", simplify=TRUE))
 
-find_pulse <- grep("<gpxtpx:hr>", data_character, value=TRUE)
-pulse <- as.numeric(gsub("</?gpxtpx:hr>","",find_pulse))
+#power
+power_function <- function(x) {
+        extract_power <- str_extract(x, "<power>.*</power>")
+        power <- str_extract(extract_power, "\\d+")
+        power
+}
+power <- head(na.locf(as.numeric(lapply(extensions, power_function))),-1)
+
+#pulse
+pulse_function <- function(x) {
+        extract_pulse <- str_extract(x, "<gpxtpx:hr>.*</gpxtpx:hr>")
+        pulse <- str_extract(extract_pulse, "\\d+")
+        pulse
+}
+pulse <- head(na.locf(as.numeric(lapply(extensions, pulse_function))),-1)
+
+#cadence
+cadence_function <- function(x) {
+        extract_cadence <- str_extract(x, "<gpxtpx:cad>.*</gpxtpx:cad>")
+        cadence <- str_extract(extract_cadence, "\\d+")
+        cadence
+}
+cadence <- head(na.locf(as.numeric(lapply(extensions, cadence_function))),-1)
+
+#temperature
+temperature_function <- function(x) {
+        extract_temperature <- str_extract(x, "<gpxtpx:atemp>.*</gpxtpx:atemp>")
+        temperature <- str_extract(extract_temperature, "\\d+")
+        temperature
+}
+temperature <- head(na.locf(as.numeric(lapply(extensions, temperature_function))),-1)
 
 strava_data <- strava_table_creator(data.gpx)
