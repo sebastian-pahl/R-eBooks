@@ -20,23 +20,53 @@ scatter3D(x = strava_data$latitude, y = strava_data$longitude, z = strava_data$e
 plotrgl()
 
 
-#-----------------GGPLOT--------------------------------------------------
+#-----------------------------------------------------------------------
 
+#ELEVATION PLOTS
 
-#elevation ggplot
-elevation_gain = sum(pmax(0, strava_data$elevation[-1]-head(strava_data$elevation,-1)))
+#ggplot: elevation vs distance OR time 
+#for plotting vs time, change x to hours in aes() and change x label in labs()
+
+library("geosphere")
+meters <- distCosine(strava_data[3:4])
+distance_function <- function(m) {
+        
+        distance <- as.numeric()
+        distance[1] = 0
+        distance[2] = m[1]
+        
+        for(i in 1:(length(m)-1)) {
+                distance[i+2] = distance[i+1] + m[i+1]
+        }
+        distance/1000
+}
+distance_km <- distance_function(meters)        
+strava_data <- data.frame(strava_data, distance_km)
+
+elevation_total = sum(pmax(0, strava_data$elevation[-1]-head(strava_data$elevation,-1)))
+distance_total = round(distance_km[length(distance_km)],2)
+library("lubridate")
+lubri_time = seconds_to_period(hours[length(hours)]*60*60)
+
 ggplot(data = strava_data) +
-        geom_point(mapping = aes(x = hours, y = elevation, 
-                                colour = pmax(100, pmin(300, power))), 
-                                size=2) +
-        theme_bw() +
+        geom_point(mapping = aes(x = distance_km, y = elevation, 
+                                 colour = pmax(100, pmin(300, power))), 
+                   size=2) +
+        #theme_bw() +
         scale_x_continuous() +
-        labs(x = "Time in hours", y = "Elevation in meters", title = "Elevation Plot", 
-             subtitle = paste("Total elevation gain =", elevation_gain, "m"),
+        labs(x = "Distance in km", y = "Elevation in meters", title = "Elevation Plot", 
+             subtitle = paste(" Total elevation gain =", elevation_total, "m\n",
+                              "Total distance =", distance_total, "km\n",
+                              "Total time =", lubri_time),
              colour = "Power in watts"
-             ) +
-        #scale_color_gradient2(low = "yellow", high = "red")
-        scale_colour_continuous(type = "viridis")
+        ) +
+        scale_colour_continuous(type = "viridis", direction=-1) +
+        theme(plot.title = element_text(face = "bold", hjust = 0.5))
+        
+
+---------------------------------------------------------------------
+
+#COORDINATE PLOTS
 
 #coordinates plotted on google maps
 library("ggmap")

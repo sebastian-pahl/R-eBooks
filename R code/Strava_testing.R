@@ -23,7 +23,8 @@ data_character <- as.character(data_table[,1])
 
 find_time <- grep("<time>", data_character, value=TRUE)
 activity_date <- strptime(find_time, "<time>%Y-%m-%dT%H:%M:%SZ</time>")
-hours <- difftime(activity_date[-1], activity_date[1])/60/60
+time_passed <- difftime(activity_date[-1], activity_date[1])
+hours <- as.numeric(time_passed)/60/60
 
 find_elevation <- grep("<ele>", data_character, value=TRUE)
 elevation <- as.numeric(gsub("</?ele>","",find_elevation))
@@ -69,3 +70,11 @@ temperature_function <- function(x) {
 temperature <- head(na.locf(as.numeric(lapply(extensions, temperature_function))),-1)
 
 strava_data <- strava_table_creator(data.gpx)
+
+
+cat("Total elevation gain =", elevation_total, "m\n", "Total distance =", distance_total, "km")
+
+y <- matrix(1:6,2,3)
+z <- c(1,2)
+merge(y,z)
+
