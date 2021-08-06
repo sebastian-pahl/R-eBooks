@@ -44,6 +44,7 @@ hr_zone_checker <- function(x, z = zones) {
         }
         else (hr = z$zone_names[5])
 }
+
 meters <- distCosine(strava_data[3:4])
 distance_function <- function(m) {
         

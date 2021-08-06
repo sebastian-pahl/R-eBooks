@@ -13,7 +13,7 @@
 
 #------------------------TESTING-----------------------------
 
-#time in power zones
-ggplot(data = strava_data) +
-        geom_bar(mapping = aes(x = power_zone))+
-        labs(x = "Power Zones", y = )
+power curve
+
+
+

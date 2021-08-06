@@ -2,8 +2,8 @@
 
 #3D with coordinates on x and y axis, and elevation on z axis
 #need packages:
-#library("plot3D")
-#library("plot3Drgl") #also need this (but just once off): library("rJava")
+library("plot3D")
+library("plot3Drgl") #also need this (but just once off): library("rJava")
 
 scatter3D(x = strava_data$latitude, y = strava_data$longitude, z = strava_data$elevation, 
           colvar = pmax(150, pmin(300, strava_data$power)),
@@ -14,7 +14,7 @@ scatter3D(x = strava_data$latitude, y = strava_data$longitude, z = strava_data$e
           lwd=5,
           main= "3D Elevation Plot",
           xlab = "Longitude", ylab = "Latitude", zlab = "Elevation", clab = "Power")
-#interactive version of plot
+#interactive version of plot, but laggy
 plotrgl()
 
 
@@ -82,3 +82,26 @@ layout(x, title = "Strava interactive plotly",
                )
        )
 
+#-----------------------------------------------------
+
+#TIME IN POWER ZONES
+
+library("ggtext")
+text_test <- data.frame(x = "Zone 5", y = 3500, label = paste(
+        "**Power in Watts**",
+        " \nZone 1:", power_zones[1],"-", power_zones[2],
+        " \nZone 2:", power_zones[2],"-", power_zones[3],
+        " \nZone 3:", power_zones[3],"-", power_zones[4],
+        " \nZone 4:", power_zones[4],"-", power_zones[5],
+        " \nZone 5:", power_zones[5],"+"
+))
+ggplot(data = strava_data) +
+        geom_bar(mapping = aes(x = power_zone, y = ), stat = "count", 
+                 fill = "blue", colour = "red") +
+        labs(x = "Power Zones", y = "Time in Zone", title = "Time in Power Zones",
+             subtitle = paste("Average Power:", round(mean(strava_data$power)),"watts",
+             )) +
+        theme(plot.title = element_text(face = "bold", hjust = 0.5)) +
+        geom_textbox(data = text_test, 
+                     aes(x, y, label = label),
+                     hjust=0.65, vjust=1)
