@@ -4,8 +4,59 @@ setwd("/Users/sebastianpahl/Git/Strava-project/gpx_files")
 #the install and load the following two packages:
 library("tidyverse") #for str
 library("zoo") #for na.locf
+library("geosphere") #need for distCosine
 
 #create data frame from gpx file (load your own gpx file here)
+
+zone_names <- c("Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5")
+power_zones <- c(0, 150, 200, 300, 400)
+hr_zones <- c(0, 110, 135, 150, 165)
+zones <- data_frame(zone_names, power_zones, hr_zones)
+power_zone_checker <- function(x, z = zones) {
+        
+        if(x < z$power_zones[2]) {
+                power = z$zone_names[1]
+        }
+        else if(x < z$power_zones[3]) {
+                power = z$zone_names[2]
+        }
+        else if(x < z$power_zones[4]) {
+                power = z$zone_names[3]
+        }
+        else if(x < z$power_zones[5]) {
+                power = z$zone_names[4]
+        }
+        else (power = z$zone_names[5])
+}
+hr_zone_checker <- function(x, z = zones) {
+        
+        if(x < z$hr_zones[2]) {
+                hr = z$zone_names[1]
+        }
+        else if(x < z$hr_zones[3]) {
+                hr = z$zone_names[2]
+        }
+        else if(x < z$hr_zones[4]) {
+                hr = z$zone_names[3]
+        }
+        else if(x < z$hr_zones[5]) {
+                hr = z$zone_names[4]
+        }
+        else (hr = z$zone_names[5])
+}
+meters <- distCosine(strava_data[3:4])
+distance_function <- function(m) {
+        
+        distance <- as.numeric()
+        distance[1] = 0
+        distance[2] = m[1]
+        
+        for(i in 1:(length(m)-1)) {
+                distance[i+2] = distance[i+1] + m[i+1]
+        }
+        distance/1000
+}
+
 strava_table_creator <- function(data.gpx) {
         
         data_table <- read.csv(data.gpx, strip.white = TRUE, skip=1,col.names = c("column1"))
@@ -34,12 +85,12 @@ strava_table_creator <- function(data.gpx) {
         }
         power <- head(na.locf(as.numeric(lapply(extensions, power_function))),-1)
         
-        pulse_function <- function(x) {
-                extract_pulse <- str_extract(x, "<gpxtpx:hr>.*</gpxtpx:hr>")
-                pulse <- str_extract(extract_pulse, "\\d+")
-                pulse
+        hr_function <- function(x) {
+                extract_hr <- str_extract(x, "<gpxtpx:hr>.*</gpxtpx:hr>")
+                hr <- str_extract(extract_hr, "\\d+")
+                hr
         }
-        pulse <- head(na.locf(as.numeric(lapply(extensions, pulse_function))),-1)
+        hr <- head(na.locf(as.numeric(lapply(extensions, hr_function))),-1)
         
         cadence_function <- function(x) {
                 extract_cadence <- str_extract(x, "<gpxtpx:cad>.*</gpxtpx:cad>")
@@ -55,13 +106,14 @@ strava_table_creator <- function(data.gpx) {
         }
         temperature <- head(na.locf(as.numeric(lapply(extensions, temperature_function))),-1)
         
-        data.frame(hours, elevation, longitude, latitude, power, pulse, cadence, temperature)
+        distance_km <- distance_function(meters)
+        power_zone <- sapply(power, power_zone_checker)
+        hr_zone <- sapply(hr, hr_zone_checker)
+        
+        data.frame(hours, elevation, longitude, latitude, power, hr, cadence, temperature,
+                   distance_km, power_zone, hr_zone)
 }
 strava_data <- strava_table_creator("Morning_Ride_Kandel.gpx")
-
-
-
-
 
 
 

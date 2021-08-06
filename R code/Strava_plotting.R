@@ -1,5 +1,3 @@
-
-
 #------------PLOT3D-------------------------------------------------------------
 
 #3D with coordinates on x and y axis, and elevation on z axis
@@ -26,22 +24,6 @@ plotrgl()
 
 #ggplot: elevation vs distance OR time 
 #for plotting vs time, change x to hours in aes() and change x label in labs()
-
-library("geosphere")
-meters <- distCosine(strava_data[3:4])
-distance_function <- function(m) {
-        
-        distance <- as.numeric()
-        distance[1] = 0
-        distance[2] = m[1]
-        
-        for(i in 1:(length(m)-1)) {
-                distance[i+2] = distance[i+1] + m[i+1]
-        }
-        distance/1000
-}
-distance_km <- distance_function(meters)        
-strava_data <- data.frame(strava_data, distance_km)
 
 elevation_total = sum(pmax(0, strava_data$elevation[-1]-head(strava_data$elevation,-1)))
 distance_total = round(distance_km[length(distance_km)],2)
@@ -100,23 +82,3 @@ layout(x, title = "Strava interactive plotly",
                )
        )
 
-
-#-----------------MPG DATA--------------------------------------
-
-
-world <- map_data("world")
-countries <- unique(world$region)
-namibia = world[(world$region == "Namibia"),]
-germany = world[(world$region == "Germany"),]
-head(germany)
-head(strava_data)
-?openmap
-
-#ggplot(data = <DATA>) + 
-#        <GEOM_FUNCTION>(
-#                mapping = aes(<MAPPINGS>),
-#                stat = <STAT>, 
-#                position = <POSITION>
-#        ) +
-#        <COORDINATE_FUNCTION> +
-#        <FACET_FUNCTION>
