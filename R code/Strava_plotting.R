@@ -105,3 +105,36 @@ ggplot(data = strava_data) +
         geom_textbox(data = text_test, 
                      aes(x, y, label = label),
                      hjust=0.65, vjust=1)
+
+-------------------------------------------------------------------
+        
+#power curve
+max(strava_data$power)
+
+#find highest power for each possible segment of time, eg: 30sec:
+avg_finder <- function(x) {
+        vector <- as.numeric()
+        for (i in x:length(strava_data$power)) {
+                vector[i] = mean(strava_data$power[(i-x+1):i])
+        }
+        vector
+}
+max_finder <- function(y) {
+        vector <- as.numeric()
+        for (i in 1:y) {
+                vector[i] = max(avg_finder(i), na.rm=TRUE)
+        }
+        vector
+}
+power <- max_finder(5*60)
+seconds <- c(1:(5*60))
+power_curve <- data_frame(seconds, power)
+names(power_curve) <- c("Time in Seconds", "Power")
+
+pc <- ggplot(data = power_curve) +
+        ggtitle("Best efforts Power Curve") +
+        geom_line(mapping = aes(x = seconds, y = max_power), colour = "Purple", size = 1.2) +
+        labs(x = "Time in Seconds", y = "Power", 
+             subtitle = "Maximum power for given time segment")
+pc
+ggplotly(pc)
