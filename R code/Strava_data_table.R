@@ -6,8 +6,6 @@ library("tidyverse") #for str
 library("zoo") #for na.locf
 library("geosphere") #need for distCosine
 
-#create data frame from gpx file (load your own gpx file here)
-
 zone_names <- c("Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5")
 power_zones <- c(0, 150, 200, 300, 400)
 hr_zones <- c(0, 110, 135, 150, 165)
@@ -43,19 +41,6 @@ hr_zone_checker <- function(x, z = zones) {
                 hr = z$zone_names[4]
         }
         else (hr = z$zone_names[5])
-}
-
-meters <- distCosine(strava_data[3:4])
-distance_function <- function(m) {
-        
-        distance <- as.numeric()
-        distance[1] = 0
-        distance[2] = m[1]
-        
-        for(i in 1:(length(m)-1)) {
-                distance[i+2] = distance[i+1] + m[i+1]
-        }
-        distance/1000
 }
 
 strava_table_creator <- function(data.gpx) {
@@ -107,14 +92,48 @@ strava_table_creator <- function(data.gpx) {
         }
         temperature <- head(na.locf(as.numeric(lapply(extensions, temperature_function))),-1)
         
-        distance_km <- distance_function(meters)
         power_zone <- sapply(power, power_zone_checker)
         hr_zone <- sapply(hr, hr_zone_checker)
         
-        data.frame(hours, elevation, longitude, latitude, power, hr, cadence, temperature,
-                   distance_km, power_zone, hr_zone)
+        data.frame(hours, elevation, longitude, latitude, power, hr, cadence, 
+                   temperature, power_zone, hr_zone)
 }
+#create data frame from gpx file (load your own gpx file here)
 strava_data <- strava_table_creator("Morning_Ride_Kandel.gpx")
 
+meters <- distCosine(strava_data[3:4])
+distance_function <- function(m) {
+        
+        distance <- as.numeric()
+        distance[1] = 0
+        distance[2] = m[1]
+        
+        for(i in 1:(length(m)-1)) {
+                distance[i+2] = distance[i+1] + m[i+1]
+        }
+        distance/1000
+}
+distance_km <- distance_function(meters)
+strava_data <- data.frame(strava_data, distance_km)
+write_csv(strava_data, "strava_data.csv")
 
+avg_finder <- function(x) {
+        vector <- as.numeric()
+        for (i in x:length(strava_data$power)) {
+                vector[i] = mean(strava_data$power[(i-x+1):i])
+        }
+        vector
+}
+max_finder <- function(y) {
+        vector <- as.numeric()
+        for (i in 1:y) {
+                vector[i] = max(avg_finder(i), na.rm=TRUE)
+        }
+        vector
+}
+power <- max_finder(5*60)
+seconds <- c(1:(5*60))
+power_curve <- data_frame(seconds, power)
+names(power_curve) <- c("Time in Seconds", "Power")
+write_csv(power_curve, "power_curve.csv")
 

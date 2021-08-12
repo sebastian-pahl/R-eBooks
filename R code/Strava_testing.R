@@ -13,5 +13,9 @@
 
 #------------------------TESTING-----------------------------
 
-
+getwd()
+setwd("/Users/sebastianpahl/Git/Strava-project/gpx_files")
+library("tinytex")
+install.packages('tinytex')
+tinytex::install_tinytex()  # install TinyTeX
 

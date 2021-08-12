@@ -1,0 +1,91 @@
+---
+title: "Strava Plots"
+author: "Sebastian Pahl"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+setwd("/Users/sebastianpahl/Git/Strava-project/gpx_files")
+library(ggplot2)
+library(dplyr)
+library("lubridate")
+library("plot3D")
+library("plot3Drgl")
+library("plotly")
+strava_data <- read.csv("strava_data.csv")
+power_curve <- read.csv("power_curve.csv")
+lubri_time <- as.character(seconds_to_period(strava_data$hours[length(strava_data$hours)]*60*60))
+```
+
+:::: {style="display: grid; grid-template-columns: 1.3fr 2fr; grid-column-gap: 10px;"}
+
+::: {}
+**Summary Stats**
+
+```
+Total time: `r lubri_time`
+Total distance: `r round(strava_data$distance_km[length(strava_data$distance_km)],2)` km
+Total elevation gain: `r sum(pmax(0,strava_data$elevation[-1]-head(strava_data$elevation,-1)))` m
+```
+:::
+
+::: {}
+**Elevation Plot**
+
+```{r, echo=FALSE}
+ggplot(data = strava_data) +
+        geom_point(mapping = aes(x = distance_km, y = elevation, 
+                                 colour = pmax(100, pmin(300, power))), 
+                   size=2) +
+        scale_x_continuous() +
+        labs(x = "Distance in km", y = "Elevation in meters", colour = "Power in watts") +
+        scale_colour_gradient(low = "yellow", high = "red", na.value = NA) +
+        theme(plot.title = element_text(face = "bold", hjust = 0.5))
+```
+:::
+
+::::
+
+:::: {style="display: grid; grid-template-columns: 1.3fr 2fr; grid-column-gap: 10px;"}
+
+::: {}
+**Summary Stats**
+
+```
+Peak 1s power: `r round(power_curve$power[1])` watts
+Peak 10s power: `r round(power_curve$power[10])` watts
+Peak 1m power: `r round(power_curve$power[60])` watts
+Peak 5m power: `r round(power_curve$power[60*5])` watts
+```
+:::
+
+::: {}
+**Power Curve**
+
+```{r, echo=FALSE}
+ggplot(data = power_curve) +
+        geom_line(mapping = aes(x = seconds, y = power), colour = "Purple", size = 1.2) +
+        labs(x = "Time in Seconds", y = "Power")
+```
+:::
+
+::::
+**Interactive 3D Elevation Plot**\
+This only works if you run the .Rmd file in R studio
+
+```{r, echo = FALSE, message=FALSE}
+x <- plot_ly(type = "scatter3d",
+        data =strava_data, 
+        x = ~latitude, y = ~longitude, z = ~elevation, 
+        color = pmax(100, pmin(300, strava_data$power)),
+        colors = "YlOrRd", size=3)
+        
+x <- x %>%  layout(x,scene = list(
+                       xaxis = list(title = "latitude"),
+                       yaxis = list(title = "longitude"),
+                       zaxis = list(title = "elevation"))
+               )
+x
+```
+
+::::

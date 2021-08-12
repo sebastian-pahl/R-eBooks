@@ -28,7 +28,7 @@ plotrgl()
 elevation_total = sum(pmax(0, strava_data$elevation[-1]-head(strava_data$elevation,-1)))
 distance_total = round(distance_km[length(distance_km)],2)
 library("lubridate")
-lubri_time = seconds_to_period(hours[length(hours)]*60*60)
+lubri_time = seconds_to_period(strava_data$hours[length(strava_data$hours)]*60*60)
 
 ggplot(data = strava_data) +
         geom_point(mapping = aes(x = distance_km, y = elevation, 
@@ -42,7 +42,8 @@ ggplot(data = strava_data) +
                               "Total time =", lubri_time),
              colour = "Power in watts"
         ) +
-        scale_colour_continuous(type = "viridis", direction=-1) +
+        scale_colour_gradient(low = "yellow", high = "red", na.value = NA) +
+        #scale_colour_continuous(type = "viridis", direction=-1) +
         theme(plot.title = element_text(face = "bold", hjust = 0.5))
         
 
@@ -61,27 +62,22 @@ ggmap(StravaMap) +
         scale_color_gradient2(low = "yellow", high = "black", mid = "red", midpoint=500)
 #ggplotly(y)  #can use ggplotly to create interactive plot in Viewer, but quite laggy
 
+#
 library("plotly")
-x <- plot_ly(data = strava_data, 
-        x = strava_data$latitude, y = strava_data$longitude, z = strava_data$elevation, 
+
+x <- plot_ly(type = "scatter3d",
+        data =strava_data, 
+        x = ~latitude, y = ~longitude, z = ~elevation, 
         color = pmax(100, pmin(300, strava_data$power)),
-        #colorscale = "Viridis", colorbar = list(title = "power"),
-        type="scatter3d", size=3,
-        marker=list(
-                colorbar=list(title='Power'),
-                colorscale='Viridis',
-                reversescale = T
-        )
-)
-
-layout(x, title = "Strava interactive plotly",
-       scene = list(
-               xaxis = list(title = "latitude"),
-               yaxis = list(title = "longitude"),
-               zaxis = list(title = "elevation")
-               )
-       )
-
+        colors = "YlOrRd", size=3)
+        
+x <- x %>%  layout(x, title = "Strava interactive plotly",
+               scene = list(
+                       xaxis = list(title = "latitude"),
+                       yaxis = list(title = "longitude"),
+                       zaxis = list(title = "elevation")
+               ))
+x
 #-----------------------------------------------------
 
 #TIME IN POWER ZONES
@@ -112,24 +108,6 @@ ggplot(data = strava_data) +
 max(strava_data$power)
 
 #find highest power for each possible segment of time, eg: 30sec:
-avg_finder <- function(x) {
-        vector <- as.numeric()
-        for (i in x:length(strava_data$power)) {
-                vector[i] = mean(strava_data$power[(i-x+1):i])
-        }
-        vector
-}
-max_finder <- function(y) {
-        vector <- as.numeric()
-        for (i in 1:y) {
-                vector[i] = max(avg_finder(i), na.rm=TRUE)
-        }
-        vector
-}
-power <- max_finder(5*60)
-seconds <- c(1:(5*60))
-power_curve <- data_frame(seconds, power)
-names(power_curve) <- c("Time in Seconds", "Power")
 
 pc <- ggplot(data = power_curve) +
         ggtitle("Best efforts Power Curve") +
