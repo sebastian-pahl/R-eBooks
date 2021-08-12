@@ -1,7 +1,4 @@
-#first change the working directory to the location of the pgx files downloaded from strava
-setwd("/Users/sebastianpahl/Git/Strava-project/gpx_files")
-
-#the install and load the following two packages:
+setwd("/Users/sebastianpahl/Git/Strava-project/")
 library("tidyverse") #for str
 library("zoo") #for na.locf
 library("geosphere") #need for distCosine
@@ -134,6 +131,5 @@ max_finder <- function(y) {
 power <- max_finder(5*60)
 seconds <- c(1:(5*60))
 power_curve <- data_frame(seconds, power)
-names(power_curve) <- c("Time in Seconds", "Power")
 write_csv(power_curve, "power_curve.csv")
 

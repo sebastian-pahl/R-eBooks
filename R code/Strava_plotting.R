@@ -7,6 +7,7 @@ library("plot3Drgl") #also need this (but just once off): library("rJava")
 
 scatter3D(x = strava_data$latitude, y = strava_data$longitude, z = strava_data$elevation, 
           colvar = pmax(150, pmin(300, strava_data$power)),
+          col = ramp.col(c("yellow", "red")),
           theta=15,  #viewing direction: increasing theta shifts image to the left 
           phi=15,    #viewing direction: increasing phi gives more top view
           bty="g",   #creates an empty perspective box
@@ -16,7 +17,7 @@ scatter3D(x = strava_data$latitude, y = strava_data$longitude, z = strava_data$e
           xlab = "Longitude", ylab = "Latitude", zlab = "Elevation", clab = "Power")
 #interactive version of plot, but laggy
 plotrgl()
-
+?plot3D
 
 #-----------------------------------------------------------------------
 
