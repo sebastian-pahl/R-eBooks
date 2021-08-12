@@ -133,3 +133,26 @@ seconds <- c(1:(5*60))
 power_curve <- data_frame(seconds, power)
 write_csv(power_curve, "power_curve.csv")
 
+#-----------------------TO DO LIST---------------------------
+
+#add power zones and hr zones
+#power curve and 25w distribution
+#give summary stats: total time, total elevation, avg power, avg speed, avg hr, avg cadence
+#manual inputs like weight, max HR, FTP
+#interesting stats: avg stats (gradient, hr, power) for given distance/time
+#calories
+#first check if power, hr and cadence data is available
+#download from either original data or gpx
+
+#COORDINATE PLOTS
+
+#coordinates plotted on google maps
+library("ggmap")
+register_google(key = "<key>") #generate own Maps API on Google Cloud Platform
+StravaMap <- get_googlemap(center = c(mean(strava_data$longitude), mean(strava_data$latitude)),
+                           zoom =11)
+ggmap(StravaMap) +
+        geom_point(data=strava_data, aes(longitude, latitude, colour=elevation), 
+                   size = 1) +
+        scale_color_gradient2(low = "yellow", high = "black", mid = "red", midpoint=500)
+#ggplotly(y)  #can use ggplotly to create interactive plot in Viewer, but quite laggy
