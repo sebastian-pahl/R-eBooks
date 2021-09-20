@@ -2,6 +2,10 @@
 title: "Strava Plots"
 author: "Sebastian Pahl"
 output: html_document
+params:
+  power: FALSE
+  hr: TRUE
+  cadence: FALSE
 ---
 
 ```{r setup, include = FALSE}
@@ -11,7 +15,7 @@ library("lubridate")
 library("plot3D")
 library("plotly")
 strava_data <- read.csv("strava_data.csv")
-power_curve <- read.csv("power_curve.csv")
+parm_curves <- read.csv("parm_curves.csv")
 lubri_time <- as.character(seconds_to_period(strava_data$hours[length(strava_data$hours)]*60*60))
 ```
 
@@ -22,7 +26,7 @@ lubri_time <- as.character(seconds_to_period(strava_data$hours[length(strava_dat
 
 ```
 Total time: `r lubri_time`
-Total distance: `r round(strava_data$distance_km[length(strava_data$distance_km)],2)` km
+Total distance: `r round(strava_data$distance[length(strava_data$distance)],2)` km
 Total elevation gain: `r sum(pmax(0,strava_data$elevation[-1]-head(strava_data$elevation,-1)))` m
 ```
 :::
@@ -31,39 +35,32 @@ Total elevation gain: `r sum(pmax(0,strava_data$elevation[-1]-head(strava_data$e
 **Elevation Plot**
 
 ```{r, echo=FALSE}
+if_parameters <- function() {
+        if(params$power) {
+                parameters <- list("power", 100, 300, "Power in watts", "watts", "Power Curve", 
+                                   "power_zone" ,"Power Zones", "Time in Power Zones", c(0, 150, 200, 300, 400))
+        } else if(params$hr) {
+                parameters <- list("hr", 110, 160, "Heart rate in bpm", "bpm", "Heart Rate Curve", 
+                                   "hr_zone" ,"Heart Rate Zones", "Time in Heart Rate Zones", c(0, 110, 135, 150, 165))
+        } else if(params$cadence) {
+                parameters <- list("cadence", 70, 90, "Cadence in rpm", "rpm", "Cadence Curve", 
+                                   "cadence_zone" ,"Cadence Zones", "Time in Cadence Zones", c(0, 70, 80, 90, 100))
+        } 
+        names(parameters) <- c("data", "lower", "upper", "label", "units", "curve_title", 
+                               "zone_data", "zone_title_1", "zone_title_2", "zones")
+        parameters
+}
+parameters <- if_parameters()
+
 ggplot(data = strava_data) +
-        geom_point(mapping = aes(x = distance_km, y = elevation, 
-                                 colour = pmax(100, pmin(300, power))), 
-                   size=2) +
-        scale_x_continuous() +
-        labs(x = "Distance in km", y = "Elevation in meters", colour = "Power in watts") +
-        scale_colour_gradient(low = "yellow", high = "red", na.value = NA) +
-        theme(plot.title = element_text(face = "bold", hjust = 0.5))
-```
-:::
+geom_point(mapping = aes(x = distance, y = elevation, 
+                         colour = pmax(parameters$lower, pmin(parameters$upper, strava_data[,parameters$data]))), 
+           size=2) +
+scale_x_continuous() +
+labs(x = "Distance in km", y = "Elevation in meters", colour = parameters$label) +
+scale_colour_gradient(low = "yellow", high = "red", na.value = NA) +
+theme(plot.title = element_text(face = "bold", hjust = 0.5))
 
-::::
-
-:::: {style="display: grid; grid-template-columns: 1.3fr 2fr; grid-column-gap: 10px;"}
-
-::: {}
-**Summary Stats**
-
-```
-Peak 1s power: `r round(power_curve$power[1])` watts
-Peak 10s power: `r round(power_curve$power[10])` watts
-Peak 1m power: `r round(power_curve$power[60])` watts
-Peak 5m power: `r round(power_curve$power[60*5])` watts
-```
-:::
-
-::: {}
-**Power Curve**
-
-```{r, echo=FALSE}
-ggplot(data = power_curve) +
-        geom_line(mapping = aes(x = seconds, y = power), colour = "Red", size = 1.2) +
-        labs(x = "Time in Seconds", y = "Power")
 ```
 :::
 
@@ -72,15 +69,15 @@ ggplot(data = power_curve) +
 **3D Elevation Plot**\
 
 ```{r, echo=FALSE}
-scatter3D(x = strava_data$latitude, y = strava_data$longitude, z =strava_data$elevation,
-          colvar = pmax(150, pmin(300, strava_data$power)),
+scatter3D(x = strava_data$longitude, y = strava_data$latitude, z =strava_data$elevation,
+          colvar = pmax(parameters$lower, pmin(parameters$upper, strava_data[,parameters$data])),
           col = ramp.col(c("yellow", "red")),
-          theta=15,  #viewing direction: increasing theta shifts image to the left 
+          theta=-200,  #viewing direction: increasing theta shifts image to the left 
           phi=15,    #viewing direction: increasing phi gives more top view
           bty="g",   #creates an empty perspective box
           type="l",  #or "l" for lines; or "h" for histogram
           lwd=5,
-          xlab = "Longitude", ylab = "Latitude", zlab = "Elevation", clab = "Power")
+          xlab = "Longitude", ylab = "Latitude", zlab = "Elevation", clab = parameters$label)
 ```
 
 **Interactive 3D Elevation Plot**\
@@ -88,82 +85,77 @@ This only works if you run the .Rmd file in R studio (not by opening the html in
 
 ```{r, echo = FALSE, message=FALSE}
 x <- plot_ly(type = "scatter3d",
-        data =strava_data, 
-        x = ~latitude, y = ~longitude, z = ~elevation, 
-        color = pmax(100, pmin(300, strava_data$power)),
-        colors = "YlOrRd", size=3)
-        
+             data =strava_data, 
+             x = ~longitude, y = ~latitude, z = ~elevation, 
+             color = pmax(parameters$lower, pmin(parameters$upper, strava_data[,parameters$data])),
+             colors = "YlOrRd", size=3)
+
 x <- x %>%  layout(x,scene = list(
-                       xaxis = list(title = "latitude"),
-                       yaxis = list(title = "longitude"),
-                       zaxis = list(title = "elevation"))
-               )
+        xaxis = list(title = "longitude"),
+        yaxis = list(title = "latitude"),
+        zaxis = list(title = "elevation"))
+)
 x
 ```
 
-:::: {style="display: grid; grid-template-columns: 1fr 2fr; grid-column-gap: 10px;"}
+
+
+:::: {style="display: grid; grid-template-columns: 1.3fr 2fr; grid-column-gap: 10px;"}
 
 ::: {}
 
-```{r, echo = FALSE}
-power_zones <- c(0, 150, 200, 300, 400)
-```
+**Summary Stats**
 
-**Power Zones**\
-\
-Zone 1: `r power_zones[1]`-`r power_zones[2]` watts\
-Zone 2: `r power_zones[2]`-`r power_zones[3]` watts\
-Zone 3: `r power_zones[3]`-`r power_zones[4]` watts\
-Zone 4: `r power_zones[4]`-`r power_zones[5]` watts\
-Zone 5: `r power_zones[5]`+ watts
+Peak 1s: `r round(parm_curves[,parameters$data][1])` `r parameters$units`\
+Peak 15s: `r round(parm_curves[parm_curves$intervals==15/60,][,parameters$data])` `r parameters$units`\
+Peak 1m: `r round(parm_curves[parm_curves$intervals==1,][,parameters$data])` `r parameters$units`\
+Peak 5m: `r round(parm_curves[parm_curves$intervals==5,][,parameters$data])` `r parameters$units`\
 
 :::
-
+        
 ::: {}
 
-**Time in Power Zones**
+**`r parameters$curve_title`**
+        
+```{r, echo=FALSE}
 
-```{r, echo = FALSE, message=FALSE}
-ggplot(data = strava_data) +
-        geom_bar(mapping = aes(x = power_zone), stat = "count", 
-                 fill = "yellow", colour = "red") +
-        labs(x = "Power Zones", y = "Time in Zone") +
-        theme(plot.title = element_text(face = "bold", hjust = 0.5))
+ggplot(data = parm_curves) +
+        geom_line(mapping = aes(x = intervals, y = parm_curves[,parameters$data]), colour = "Red", size = 1.2) +
+        labs(x = "Time in Minutes", y = parameters$label)
+
 ```
 :::
 
 ::::
 
 
+
 :::: {style="display: grid; grid-template-columns: 1fr 2fr; grid-column-gap: 10px;"}
 
 ::: {}
 
-```{r, echo = FALSE}
-hr_zones <- c(0, 110, 135, 150, 165)
-```
-
-**Heart Rate Zones**\
+**`r parameters$zone_title_1`**\
 \
-Zone 1: `r hr_zones[1]`-`r hr_zones[2]` bbm\
-Zone 2: `r hr_zones[2]`-`r hr_zones[3]` bbm\
-Zone 3: `r hr_zones[3]`-`r hr_zones[4]` bbm\
-Zone 4: `r hr_zones[4]`-`r hr_zones[5]` bbm\
-Zone 5: `r hr_zones[5]`+ bbm
+Zone 1: `r parameters$zones[1]`-`r parameters$zones[2]` `r parameters$units`\
+Zone 2: `r parameters$zones[2]`-`r parameters$zones[3]` `r parameters$units`\
+Zone 3: `r parameters$zones[3]`-`r parameters$zones[4]` `r parameters$units`\
+Zone 4: `r parameters$zones[4]`-`r parameters$zones[5]` `r parameters$units`\
+Zone 5: `r parameters$zones[5]`+ `r parameters$units`\
 
 :::
-
+        
 ::: {}
 
-**Time in Heart Rate Zones**
-
+**`r parameters$zone_title_2`**\
+        
 ```{r, echo = FALSE, message=FALSE}
 ggplot(data = strava_data) +
-        geom_bar(mapping = aes(x = hr_zone), stat = "count", 
+        geom_bar(mapping = aes(x = strava_data[, parameters$zone_data]), stat = "count", 
                  fill = "yellow", colour = "red") +
-        labs(x = "HR Zones", y = "Time in Zone") +
+        labs(x = parameters$zone_title_1, y = "Time in Zone") +
         theme(plot.title = element_text(face = "bold", hjust = 0.5))
 ```
 :::
-
+        
 ::::
+
